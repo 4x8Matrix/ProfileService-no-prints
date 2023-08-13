@@ -620,13 +620,11 @@ local function WaitForPendingProfileStore(profile_store)
 end
 
 local function RegisterIssue(error_message, store_name, store_scope, profile_key) -- Called when a DataStore API call errors
-	warn("[ProfileService]: DataStore API error " .. IdentifyProfile(store_name, store_scope, profile_key) .. " - \"" .. tostring(error_message) .. "\"")
 	table.insert(IssueQueue, os.clock()) -- Adding issue time to queue
 	ProfileService.IssueSignal:Fire(tostring(error_message), store_name, profile_key)
 end
 
 local function RegisterCorruption(store_name, store_scope, profile_key) -- Called when a corrupted profile is loaded
-	warn("[ProfileService]: Resolved profile corruption " .. IdentifyProfile(store_name, store_scope, profile_key))
 	ProfileService.CorruptionSignal:Fire(store_name, profile_key)
 end
 
@@ -2289,9 +2287,6 @@ if IsStudio == true then
 			DataStoreService:GetDataStore("____PS"):SetAsync("____PS", os.time())
 		end)
 		local no_internet_access = status == false and string.find(message, "ConnectFail", 1, true) ~= nil
-		if no_internet_access == true then
-			warn("[ProfileService]: No internet access - check your network connection")
-		end
 		if status == false and
 			(string.find(message, "403", 1, true) ~= nil or -- Cannot write to DataStore from studio if API access is not enabled
 				string.find(message, "must publish", 1, true) ~= nil or -- Game must be published to access live keys
@@ -2299,9 +2294,6 @@ if IsStudio == true then
 
 			UseMockDataStore = true
 			ProfileService._use_mock_data_store = true
-			print("[ProfileService]: Roblox API services unavailable - data will not be saved")
-		else
-			print("[ProfileService]: Roblox API services available - data will be saved")
 		end
 		IsLiveCheckActive = false
 	end)
@@ -2354,7 +2346,6 @@ RunService.Heartbeat:Connect(function()
 			ProfileService.CriticalState = true
 			ProfileService.CriticalStateSignal:Fire(true)
 			CriticalStateStart = os.clock()
-			warn("[ProfileService]: Entered critical state")
 		end
 	else
 		if #IssueQueue >= SETTINGS.IssueCountForCriticalState then
@@ -2362,7 +2353,6 @@ RunService.Heartbeat:Connect(function()
 		elseif os.clock() - CriticalStateStart > SETTINGS.CriticalStateLast then
 			ProfileService.CriticalState = false
 			ProfileService.CriticalStateSignal:Fire(false)
-			warn("[ProfileService]: Critical state ended")
 		end
 	end
 	-- Issue queue:
